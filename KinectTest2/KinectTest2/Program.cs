@@ -12,50 +12,48 @@ namespace KinectTest2
 {
     class Run
     {
+        public KinectSensor sensor = null;
+        public DepthFrameReader depthFrameReader = null;
+        private ushort[] depthFrameData = null;
+        private byte[] depthPixels = null
+
+
         static void Main(string[] args)
         {
             Console.WriteLine("hello, world");
 
-            // The sensor objects.
-            KinectSensor _sensor = null;
-
-            /*
-            // The color frame reader is used to display the RGB stream
-            ColorFrameReader _colorReader = null;
-
-            // The body frame reader is used to identify the bodies
-            BodyFrameReader _bodyReader = null;
-
-            // The list of bodies identified by the sensor
-            IList<Body> _bodies = null;
-
-            // The face frame source
-            FaceFrameSource _faceSource = null;
-
-            // The face frame reader
-            FaceFrameReader _faceReader = null;
-            */
-
-            // The depth sensor
-            DepthFrameReader _depthReader = null;
-
-
-            // finally, start
-            _sensor = KinectSensor.GetDefault();
+            // get the attached sensor
+            this.sensor = KinectSensor.GetDefault();
 
             if (_sensor != null)
             {
-                _sensor.Open();
-
                 Console.WriteLine("Sensor found!");
 
-                // DO STUFF FINALLY
+                // get the depthFrameDescription from the DepthFrameSource
+                FrameDescription depthFrameDescription = this.sensor.DepthFrameSource.FrameDescription;
+
+                // open the reader for depth frames
+                this.depthFrameReader = this.sensor.DepthFrameSource.OpenReader();
+
+                // attach handler to be invoked upon frame arrival
+                this.depthFrameReader.FrameArrived += DepthFrameArrivedHandler;
+
+                // allocate space to put the pixels being received
+                this.depthFrameData = new ushort[depthFrameDescription.Width * depthFrameDescription.Height];
+                this.depthPixels = new byte[depthFrameDescription.Width * depthFrameDescription.Height * BytesPerPixel];
+
+                
 
             }
             else
             {
                 Console.WriteLine("Sensor not found");
             }
+        }
+
+        private static void DepthFrameArrivedHandler(object sender, DepthFrameArrivedEventArgs e)
+        {
+
         }
     }
 }
