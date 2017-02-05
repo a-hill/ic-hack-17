@@ -14,6 +14,9 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using System.Windows;
 using System.IO;
+using System.Net.Http;
+using MyToolkit;
+using MyToolkit.Networking;
 
 namespace KinectTest2
 {
@@ -162,11 +165,45 @@ namespace KinectTest2
 
                     // Also give the grayscale depth bitmap to the front end
 
-                    OurBlobsDetector blobsDetector = new OurBlobsDetector();
-                    //List<OurRectangle> rectangles = blobsDetector.ProcessImage(writableBitmapToBitmap(depthFrame.ToBitmap()));
+                    ushort[] smoothDepthFrameData = Smooth.smoother(depthFrameData, depthFrameDescription.Width, depthFrameDescription.Height);
+                    
+                    //---------
+                    // We multiply the product of width and height by 4 because each byte
+                    // will represent a different color channel per pixel in the final iamge.
+                    byte[] colorFrame = new byte[depthFrameDescription.Width * depthFrameDescription.Height * 4];
 
+                    // Process each row in parallel
+                    Parallel.For(0, 240, depthArrayRowIndex =>
+                    {
+                        // Process each pixel in the row
+                        for (int depthArrayColumnIndex = 0; depthArrayColumnIndex < 320; depthArrayColumnIndex++)
+                        {
+                            var distanceIndex = depthArrayColumnIndex + (depthArrayRowIndex * 320);
+                            // Because the colorFrame we are creating has four times as many bytes representing
+                            // a pixel in the final image, we set the index to be the depth index * 4.
+                            var index = distanceIndex * 4;
+
+                            // Map the distance to an intesity that can be represented in RGB
+                            var intensity = CalculateIntensityFromDistance((int) smoothDepthFrameData[distanceIndex]);
+
+                            // Apply the intensity to the color channels
+                            colorFrame[index + 0] = intensity;
+                            colorFrame[index + 1] = intensity;
+                            colorFrame[index + 2] = intensity;
+                        }
+                    });
+                    //----------
+                    BitmapSource bms = BitmapSource.Create(depthFrameDescription.Width, depthFrameDescription.Height, 96, 96, PixelFormats.Bgr32, null, colorFrame, depthFrameDescription.Width * PixelFormats.Bgr32.BitsPerPixel / 8);
+                    //----------
+                    
+                
+                
+                    OurBlobsDetector blobsDetector = new OurBlobsDetector();
+                    List<OurRectangle> rectangles = blobsDetector.ProcessImage(GetBitmap(bms));
+                    GetBitmap(bms).Save("testSmooth.bmp");
+                    //List<OurRectangle> rectangles = blobsDetector.ProcessImage(writableBitmapToBitmap(depthFrame.ToBitmap()));
                     //List<OurRectangle> rectangles = blobsDetector.ProcessImage(new Bitmap(Image.FromFile("C:\\Users\\Ruhi Choudhury\\Pictures\\ruhi.png")));
-                    List<OurRectangle> rectangles = blobsDetector.ProcessImage(new Bitmap(Image.FromFile("C:\\Users\\Ruhi Choudhury\\Pictures\\testColour.bmp")));
+                    //List<OurRectangle> rectangles = blobsDetector.ProcessImage(new Bitmap(Image.FromFile("C:\\Users\\Ruhi Choudhury\\Pictures\\testColour.bmp")));
 
                     foreach (OurRectangle r in rectangles)
                     {
@@ -174,6 +211,12 @@ namespace KinectTest2
                     }
                     Console.WriteLine();
                     depthFrame.ToBitmap().Save("testDepthGray.bmp");
+
+                    watsonStuff();
+
+
+
+
                 }
                 #endregion
             }
@@ -199,6 +242,41 @@ namespace KinectTest2
             }
         }
 
+        private async static void watsonStuff() {
+
+            var request = new HttpPostRequest("https://gateway-a.watsonplatform.net/visual-recognition/api/v3/classify?api_key=c819e57248e3e2a8f6e67c5663265e7660c54d0d&version=2016-05-19");
+            Stream fileStream = new FileStream("C:/Users/Ruhi Choudhury/Documents/ic-hack-17/KinectTest2/KinectTest2/bin/Debug/ruhi.PNG", FileMode.Open);
+            request.Files.Add(new HttpPostFile("images_file", "ruhi.PNG", fileStream));
+            var response = await Http.PostAsync(request);
+
+            // print response
+            Console.WriteLine(response.Response);
+
+            // parse json and SPEAK
+            JsonHandler.jsonHandlerAndFilterAndSpeak(response.Response);
+        }
+
+        private static short CalculateDistanceFromDepth(byte first, byte second)
+        {
+            // Please note that this would be different if you use Depth and User tracking rather than just depth
+            return (short)(first | second << 8);
+        }
+
+        private static byte CalculateIntensityFromDistance(int distance)
+        {
+            int MinDepthDistance = 50;
+            int MaxDepthDistanceOffset = 100;
+            // This will map a distance value to a 0 - 255 range
+            // for the purposes of applying the resulting value
+            // to RGB pixels.
+            int newMax = distance - MinDepthDistance;
+            if (newMax > 0)
+                return (byte)(255 - (255 * newMax
+                / (MaxDepthDistanceOffset)));
+            else
+                return (byte)255;
+        }
+
         private static WriteableBitmap bitmapToWritableBitmap(Bitmap b)
         {
             // Convert Writable Bitmap to Bitmap
@@ -218,6 +296,25 @@ namespace KinectTest2
                 enc.Save(outStream);
                 bmp = new Bitmap(outStream);
             }
+            return bmp;
+        }
+
+        private static Bitmap GetBitmap(BitmapSource source)
+        {
+            Bitmap bmp = new Bitmap(
+              source.PixelWidth,
+              source.PixelHeight,
+              System.Drawing.Imaging.PixelFormat.Format32bppPArgb);
+            BitmapData data = bmp.LockBits(
+              new Rectangle(System.Drawing.Point.Empty, bmp.Size),
+              ImageLockMode.WriteOnly,
+              System.Drawing.Imaging.PixelFormat.Format32bppPArgb);
+            source.CopyPixels(
+              Int32Rect.Empty,
+              data.Scan0,
+              data.Height * data.Stride,
+              data.Stride);
+            bmp.UnlockBits(data);
             return bmp;
         }
 
