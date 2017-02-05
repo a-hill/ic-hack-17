@@ -46,7 +46,7 @@ namespace KinectTest2
 
         static void Main(string[] args)
         {
-            Console.WriteLine("Hello, World!");
+            Console.WriteLine("Hello, ICHack!");
 
             // get the attached sensor
             sensor = KinectSensor.GetDefault();
@@ -66,11 +66,11 @@ namespace KinectTest2
             // TODO: Implement IsAvailableChanged delegate
             if (sensor.IsAvailable)
             {
-                Console.WriteLine("Sensor found!");
+                //Console.WriteLine("Sensor found!");
             }
             else
             {
-                Console.WriteLine("Sensor not found");
+                //Console.WriteLine("Sensor not found");
             }
 
             // don't just exit straight away
@@ -181,7 +181,7 @@ namespace KinectTest2
                         }
                     }
 
-                    // FIND MIN INDEX, watsonStuff will use this later
+                    // FIND MIN INDEX, will use this later
                     UInt16? minValue = UInt16.MaxValue;
                     int minCol = -1;
                     int minRow = -1;
@@ -208,9 +208,9 @@ namespace KinectTest2
                     depthFrame.ToBitmap().Save("testDepthGray.bmp");
 
 
-                    // do watson api call with image and parse results and speak
+                    // do api call with image and parse results and speak
                     //Console.WriteLine(minX); Console.WriteLine(minVal);
-                    watsonStuff(writableBitmapToBitmap(bitmap), minX, minVal);
+                    api_call(writableBitmapToBitmap(bitmap), minX, minVal);
 
                     
              
@@ -220,13 +220,13 @@ namespace KinectTest2
             
         }
 
-        private async static void watsonStuff(Bitmap img, int minX, UInt16 minVal) {
+        private async static void api_call(Bitmap img, int minX, UInt16 minVal) {
 
             ResizeNearestNeighbor filter = new ResizeNearestNeighbor(240, 240);
             var outImage = filter.Apply(img);
             outImage.Save("color.png");
 
-            // Spare Key: bf2b5a15ac492f7300e13bcfcfcea5cefc6fd487
+            //String key= "bf2b5a15ac492f7300e13bcfcfcea5cefc6fd487";
             String key = "8f09493921ea43373925f76be069c145b017123b";
 
             var request = new HttpPostRequest("https://gateway-a.watsonplatform.net/visual-recognition/api/v3/classify?api_key=" + key + "&version=2016-05-19");
