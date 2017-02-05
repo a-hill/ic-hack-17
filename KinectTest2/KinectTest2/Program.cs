@@ -18,6 +18,7 @@ using System.IO;
 using System.Net.Http;
 using MyToolkit;
 using MyToolkit.Networking;
+using AForge.Imaging.Filters;
 
 namespace KinectTest2
 {
@@ -130,7 +131,6 @@ namespace KinectTest2
                     // Give the bitmap to the front end
                     //Dummy2(bitmap);
 
-                    bitmap.Save("color.png");
                 }
                 #endregion
             }
@@ -263,7 +263,7 @@ namespace KinectTest2
 
                     // do watson api call with image and parse results and speak
                     //Console.WriteLine(minX); Console.WriteLine(minVal);
-                    watsonStuff(minX, minVal);
+                    watsonStuff(writableBitmapToBitmap(bitmap), minX, minVal);
 
                     
 
@@ -274,7 +274,12 @@ namespace KinectTest2
             
         }
 
-        private async static void watsonStuff(int minX, UInt16 minVal) {
+        private async static void watsonStuff(Bitmap img, int minX, UInt16 minVal) {
+
+            ResizeNearestNeighbor filter = new ResizeNearestNeighbor(240, 240);
+            var outImage = filter.Apply(img);
+            outImage.Save("color.png");
+
 
             var request = new HttpPostRequest("https://gateway-a.watsonplatform.net/visual-recognition/api/v3/classify?api_key=c819e57248e3e2a8f6e67c5663265e7660c54d0d&version=2016-05-19");
             Stream fileStream = new FileStream("C:/Users/Ruhi Choudhury/Documents/ic-hack-17/KinectTest2/KinectTest2/bin/Debug/color.png", FileMode.Open);
