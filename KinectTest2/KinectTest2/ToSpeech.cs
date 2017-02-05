@@ -31,7 +31,7 @@ namespace KinectTest2
         public ToSpeech(string type, double distance, Position position)
         {
             string[] type_words = type.Split('/');
-            this.type = type_words[type_words.Length - 1];
+            this.type = type_words[1];
             this.distance = distance;
             this.position = position;
             this.exists = true;
