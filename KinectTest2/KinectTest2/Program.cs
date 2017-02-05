@@ -202,59 +202,6 @@ namespace KinectTest2
                     UInt16 minVal = minValue.Value;
                     //Console.WriteLine(minX); Console.WriteLine(minVal);
 
-
-
-
-                    // Give the frame to the front end
-                    //Dummy(frameData2D); // not quite yet - need depths for text to speech
-
-                    // Also give the grayscale depth bitmap to the front end
-
-                    #region
-                    ushort[] smoothDepthFrameData = Smooth.smoother(depthFrameData, depthFrameDescription.Width, depthFrameDescription.Height);
-
-                    //---------
-                    // We multiply the product of width and height by 4 because each byte
-                    // will represent a different color channel per pixel in the final iamge.
-                    byte[] colorFrame = new byte[depthFrameDescription.Width * depthFrameDescription.Height * 4];
-
-                    // Process each row in parallel
-                    Parallel.For(0, 240, depthArrayRowIndex =>
-                    {
-                        // Process each pixel in the row
-                        for (int depthArrayColumnIndex = 0; depthArrayColumnIndex < 320; depthArrayColumnIndex++)
-                        {
-                            var distanceIndex = depthArrayColumnIndex + (depthArrayRowIndex * 320);
-                            // Because the colorFrame we are creating has four times as many bytes representing
-                            // a pixel in the final image, we set the index to be the depth index * 4.
-                            var index = distanceIndex * 4;
-
-                            // Map the distance to an intesity that can be represented in RGB
-                            var intensity = CalculateIntensityFromDistance((int) smoothDepthFrameData[distanceIndex]);
-
-                            // Apply the intensity to the color channels
-                            colorFrame[index + 0] = intensity;
-                            colorFrame[index + 1] = intensity;
-                            colorFrame[index + 2] = intensity;
-                        }
-                    });
-                    //----------
-                    BitmapSource bms = BitmapSource.Create(depthFrameDescription.Width, depthFrameDescription.Height, 96, 96, PixelFormats.Bgr32, null, colorFrame, depthFrameDescription.Width * PixelFormats.Bgr32.BitsPerPixel / 8);
-                    //----------
-                    
-                
-                
-                    OurBlobsDetector blobsDetector = new OurBlobsDetector();
-                    List<OurRectangle> rectangles = blobsDetector.ProcessImage(GetBitmap(bms));
-                    GetBitmap(bms).Save("testSmooth.bmp");
-                    //List<OurRectangle> rectangles = blobsDetector.ProcessImage(writableBitmapToBitmap(depthFrame.ToBitmap()));
-                    //List<OurRectangle> rectangles = blobsDetector.ProcessImage(new Bitmap(Image.FromFile("C:\\Users\\Ruhi Choudhury\\Pictures\\ruhi.png")));
-                    //List<OurRectangle> rectangles = blobsDetector.ProcessImage(new Bitmap(Image.FromFile("C:\\Users\\Ruhi Choudhury\\Pictures\\testColour.bmp")));
-
-                    foreach (OurRectangle r in rectangles)
-                    {
-                        Console.WriteLine("Rectangle: " + r.topLeft.X + "," + r.topLeft.Y + " and " + r.bottomRight.X + "," + r.bottomRight.Y);
-                    }
                     #endregion
 
                     Console.WriteLine();
@@ -266,9 +213,8 @@ namespace KinectTest2
                     watsonStuff(writableBitmapToBitmap(bitmap), minX, minVal);
 
                     
-
+             
                 }
-                #endregion
             }
 
             
@@ -281,14 +227,14 @@ namespace KinectTest2
             outImage.Save("color.png");
 
 
-            var request = new HttpPostRequest("https://gateway-a.watsonplatform.net/visual-recognition/api/v3/classify?api_key=c819e57248e3e2a8f6e67c5663265e7660c54d0d&version=2016-05-19");
+            var request = new HttpPostRequest("https://gateway-a.watsonplatform.net/visual-recognition/api/v3/classify?api_key=8f09493921ea43373925f76be069c145b017123b&version=2016-05-19");
             Stream fileStream = new FileStream("C:/Users/Ruhi Choudhury/Documents/ic-hack-17/KinectTest2/KinectTest2/bin/Debug/color.png", FileMode.Open);
             request.Files.Add(new HttpPostFile("images_file", "color.png", fileStream));
             var response = await Http.PostAsync(request);
 
             // print response
             Console.WriteLine(response.Response);
-
+            
             // parse json and SPEAK
             JsonHandler.jsonHandlerAndFilterAndSpeak(response.Response, minX, minVal);
         }
