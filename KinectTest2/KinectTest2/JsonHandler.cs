@@ -13,7 +13,7 @@ namespace KinectTest2
 
     public static class JsonHandler
     {
-        public static void jsonHandlerAndFilterAndSpeak(string text)
+        public static void jsonHandlerAndFilterAndSpeak(string text, int minX, UInt16 minVal)
         {
             //string text = System.IO.File.ReadAllText(@"C:\Users\ahmer\Documents\ic-hack-17\json.txt");
 
@@ -32,7 +32,7 @@ namespace KinectTest2
             dynamic data = Json.Decode(text);
 
             // get the most reliable result and fill a toSpeech object
-            ToSpeech result = bestResult(data);
+            ToSpeech result = bestResult(data, minX, minVal);
             Console.WriteLine("result=");
             Console.WriteLine(result);
 
@@ -46,8 +46,10 @@ namespace KinectTest2
             System.Console.ReadLine();
         }
 
-        public static ToSpeech bestResult(dynamic data)
+        public static ToSpeech bestResult(dynamic data, int minX, UInt16 minVal)
         {
+            Console.WriteLine(minX); Console.WriteLine(minVal);
+
             ToSpeech result;
 
             // to to get images[0]
@@ -71,8 +73,25 @@ namespace KinectTest2
                 }
 
                 // now, construct a ToSpeech
-                result = new ToSpeech(typeOfHighest, 0, Position.Left); // we only know type rn
 
+                // choose Position from MinX (hard code 512 rn)
+                Position position = Position.Center;
+                if (minX < 230)
+                {
+                    position = Position.Left;
+                }
+                else if (minX < 330)
+                {
+                    position = Position.Center;
+                }
+                else
+                {
+                    position = Position.Right;
+                }
+                Console.WriteLine(position);
+                Console.WriteLine(minVal);
+
+                result = new ToSpeech(typeOfHighest, (double) minVal / 1000.0, position); // we only know type rn
             }
             catch (Exception e) // this would be better unhandled here and instead caught by caller function
             {

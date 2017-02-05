@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using MoreLinq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Media;
@@ -27,7 +28,7 @@ namespace KinectTest2
         private static int FRAME_RATE = 23; // TOOD: Set frame rate after based on light levels
         private static int SECS_BETWEEN_PROCESSING = 5;
         private static int INVOCATIONS_TO_IGNORE = SECS_BETWEEN_PROCESSING * FRAME_RATE;
-        private static int CURR_INVOCATIONS;
+        private static int CURR_INVOCATIONS = INVOCATIONS_TO_IGNORE;
 
         // Sensor and Reader
         private static KinectSensor sensor = null;
@@ -114,6 +115,26 @@ namespace KinectTest2
 
             var frameRef = e.FrameReference.AcquireFrame();
 
+            // get the new color frame and open it
+            using (ColorFrame colorFrame = frameRef.ColorFrameReference.AcquireFrame())
+            {
+                #region
+                if (colorFrame != null)
+                {
+                    // Convert to bitmap
+                    bitmap = colorFrame.ToBitmap();
+
+                    Console.WriteLine("Bitmap Image Data:");
+                    Console.WriteLine(bitmap.ToString());
+
+                    // Give the bitmap to the front end
+                    //Dummy2(bitmap);
+
+                    bitmap.Save("color.png");
+                }
+                #endregion
+            }
+
             // get the new depth frame and open it
             using (DepthFrame depthFrame = frameRef.DepthFrameReference.AcquireFrame())
             {
@@ -148,7 +169,7 @@ namespace KinectTest2
                                 }
                                 else
                                 {
-                                    frameData2D[i, j] = null;
+                                    frameData2D[i, j] = UInt16.MaxValue;
                                 }
                             }
                             catch(Exception ex)
@@ -160,13 +181,38 @@ namespace KinectTest2
                         }
                     }
 
+                    // FIND MIN INDEX, watsonStuff will use this later
+                    UInt16? minValue = UInt16.MaxValue;
+                    int minCol = -1;
+                    int minRow = -1;
+                    for (int row = 0; row < w; row++)
+                    {
+                        for (int col = 0; col < h; col++)
+                        {
+                            if (frameData2D[row, col] < minValue)
+                            {
+                                minValue = frameData2D[row, col];
+                                minRow = row;
+                                minCol = col;
+                            }
+                        }
+                    }
+
+                    int minX = minRow;
+                    UInt16 minVal = minValue.Value;
+                    //Console.WriteLine(minX); Console.WriteLine(minVal);
+
+
+
+
                     // Give the frame to the front end
                     //Dummy(frameData2D); // not quite yet - need depths for text to speech
 
                     // Also give the grayscale depth bitmap to the front end
 
+                    #region
                     ushort[] smoothDepthFrameData = Smooth.smoother(depthFrameData, depthFrameDescription.Width, depthFrameDescription.Height);
-                    
+
                     //---------
                     // We multiply the product of width and height by 4 because each byte
                     // will represent a different color channel per pixel in the final iamge.
@@ -209,51 +255,37 @@ namespace KinectTest2
                     {
                         Console.WriteLine("Rectangle: " + r.topLeft.X + "," + r.topLeft.Y + " and " + r.bottomRight.X + "," + r.bottomRight.Y);
                     }
+                    #endregion
+
                     Console.WriteLine();
                     depthFrame.ToBitmap().Save("testDepthGray.bmp");
 
-                    watsonStuff();
 
+                    // do watson api call with image and parse results and speak
+                    //Console.WriteLine(minX); Console.WriteLine(minVal);
+                    watsonStuff(minX, minVal);
 
-
+                    
 
                 }
                 #endregion
             }
 
-            // get the new color frame and open it
-            using (ColorFrame colorFrame = frameRef.ColorFrameReference.AcquireFrame())
-            {
-                #region
-                if (colorFrame != null)
-                {
-                    // Convert to bitmap
-                    bitmap = colorFrame.ToBitmap();
-
-                    Console.WriteLine("Bitmap Image Data:");
-                    Console.WriteLine(bitmap.ToString());
-
-                    // Give the bitmap to the front end
-                    //Dummy2(bitmap);
-
-                    bitmap.Save("testColour.bmp");
-                }
-                #endregion
-            }
+            
         }
 
-        private async static void watsonStuff() {
+        private async static void watsonStuff(int minX, UInt16 minVal) {
 
             var request = new HttpPostRequest("https://gateway-a.watsonplatform.net/visual-recognition/api/v3/classify?api_key=c819e57248e3e2a8f6e67c5663265e7660c54d0d&version=2016-05-19");
-            Stream fileStream = new FileStream("C:/Users/Ruhi Choudhury/Documents/ic-hack-17/KinectTest2/KinectTest2/bin/Debug/ruhi.PNG", FileMode.Open);
-            request.Files.Add(new HttpPostFile("images_file", "ruhi.PNG", fileStream));
+            Stream fileStream = new FileStream("C:/Users/Ruhi Choudhury/Documents/ic-hack-17/KinectTest2/KinectTest2/bin/Debug/color.png", FileMode.Open);
+            request.Files.Add(new HttpPostFile("images_file", "color.png", fileStream));
             var response = await Http.PostAsync(request);
 
             // print response
             Console.WriteLine(response.Response);
 
             // parse json and SPEAK
-            JsonHandler.jsonHandlerAndFilterAndSpeak(response.Response);
+            JsonHandler.jsonHandlerAndFilterAndSpeak(response.Response, minX, minVal);
         }
 
         private static short CalculateDistanceFromDepth(byte first, byte second)

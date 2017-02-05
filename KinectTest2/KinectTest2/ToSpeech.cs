@@ -20,7 +20,7 @@ namespace KinectTest2
         private static int SYNTH_VOL = 100;
 
         public string type;
-        public int distance;
+        public double distance;
         public Position position;
         private bool exists;
 
@@ -28,7 +28,7 @@ namespace KinectTest2
         {
             exists = false;
         }
-        public ToSpeech(string type, int distance, Position position)
+        public ToSpeech(string type, double distance, Position position)
         {
             string[] type_words = type.Split('/');
             this.type = type_words[type_words.Length - 1];
@@ -67,12 +67,21 @@ namespace KinectTest2
             warning.Append("There is a ");
             warning.Append(type);
             warning.Append(" about ");
-            warning.Append(distance);
+            warning.Append(RoundToSignificantDigits(distance, 2));
             warning.Append(" metres ahead to the ");
             warning.Append(position);
             warning.Append(".");
 
             return warning.ToString();
+        }
+
+        private static double RoundToSignificantDigits(double d, int digits)
+        {
+            if (d == 0)
+                return 0;
+
+            double scale = Math.Pow(10, Math.Floor(Math.Log10(Math.Abs(d))) + 1);
+            return scale * Math.Round(d / scale, digits);
         }
     }
 }
