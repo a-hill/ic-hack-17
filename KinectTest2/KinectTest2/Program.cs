@@ -226,8 +226,10 @@ namespace KinectTest2
             var outImage = filter.Apply(img);
             outImage.Save("color.png");
 
+            // Spare Key: bf2b5a15ac492f7300e13bcfcfcea5cefc6fd487
+            String key = "8f09493921ea43373925f76be069c145b017123b";
 
-            var request = new HttpPostRequest("https://gateway-a.watsonplatform.net/visual-recognition/api/v3/classify?api_key=8f09493921ea43373925f76be069c145b017123b&version=2016-05-19");
+            var request = new HttpPostRequest("https://gateway-a.watsonplatform.net/visual-recognition/api/v3/classify?api_key=" + key + "&version=2016-05-19");
             Stream fileStream = new FileStream("C:/Users/Ruhi Choudhury/Documents/ic-hack-17/KinectTest2/KinectTest2/bin/Debug/color.png", FileMode.Open);
             request.Files.Add(new HttpPostFile("images_file", "color.png", fileStream));
             var response = await Http.PostAsync(request);
