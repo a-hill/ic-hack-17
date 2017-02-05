@@ -48,7 +48,7 @@ namespace KinectTest2
         }
 
         // Set image to display by the control
-        public List<OurRectangle> ProcessImage(Bitmap depthImage, Bitmap colorImage)
+        public List<OurRectangle> ProcessImage(Bitmap depthImage)
         {
             /*
             leftEdges.Clear();
@@ -96,7 +96,7 @@ namespace KinectTest2
                 IntPoint leftEdgePoint = leftEdge[0];
                 int leftX = leftEdgePoint.X;
 
-                IntPoint rightEdgePoint = topEdge[0];
+                IntPoint rightEdgePoint = rightEdge[0];
                 int rightX = rightEdgePoint.X;
 
                 IntPoint topLeft = new IntPoint(leftX, topY);

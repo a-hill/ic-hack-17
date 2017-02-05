@@ -10,14 +10,15 @@ using Microsoft.Kinect;
 using Microsoft.Kinect.Face;
 using Microsoft.Kinect.Fusion;
 using Microsoft.Kinect.Tools;
-
+using System.Drawing;
+using System.Drawing.Imaging;
+using System.Windows;
+using System.IO;
 
 namespace KinectTest2
 {
     class Run
     {
-        private static void Dummy(UInt16?[,] frameData) { return; }
-        private static void Dummy2(WriteableBitmap bitmap) { return; }
 
         // Frame rate control
         private static int FRAME_RATE = 23; // TOOD: Set frame rate after based on light levels
@@ -155,12 +156,23 @@ namespace KinectTest2
                             }
                         }
                     }
-                                        
+
                     // Give the frame to the front end
-                    Dummy(frameData2D);
+                    //Dummy(frameData2D); // not quite yet - need depths for text to speech
 
                     // Also give the grayscale depth bitmap to the front end
-                    Dummy2(depthFrame.ToBitmap());
+
+                    OurBlobsDetector blobsDetector = new OurBlobsDetector();
+                    //List<OurRectangle> rectangles = blobsDetector.ProcessImage(writableBitmapToBitmap(depthFrame.ToBitmap()));
+
+                    //List<OurRectangle> rectangles = blobsDetector.ProcessImage(new Bitmap(Image.FromFile("C:\\Users\\Ruhi Choudhury\\Pictures\\ruhi.png")));
+                    List<OurRectangle> rectangles = blobsDetector.ProcessImage(new Bitmap(Image.FromFile("C:\\Users\\Ruhi Choudhury\\Pictures\\testColour.bmp")));
+
+                    foreach (OurRectangle r in rectangles)
+                    {
+                        Console.WriteLine("Rectangle: " + r.topLeft.X + "," + r.topLeft.Y + " and " + r.bottomRight.X + "," + r.bottomRight.Y);
+                    }
+                    Console.WriteLine();
                     depthFrame.ToBitmap().Save("testDepthGray.bmp");
                 }
                 #endregion
@@ -179,12 +191,35 @@ namespace KinectTest2
                     Console.WriteLine(bitmap.ToString());
 
                     // Give the bitmap to the front end
-                    Dummy2(bitmap);
+                    //Dummy2(bitmap);
 
                     bitmap.Save("testColour.bmp");
                 }
                 #endregion
             }
         }
+
+        private static WriteableBitmap bitmapToWritableBitmap(Bitmap b)
+        {
+            // Convert Writable Bitmap to Bitmap
+            BitmapSource bitmapSource = System.Windows.Interop.Imaging.CreateBitmapSourceFromHBitmap(
+            b.GetHbitmap(), IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
+            WriteableBitmap writeableBitmap = new WriteableBitmap(bitmapSource);
+            return writeableBitmap;
+        }
+
+        private static Bitmap writableBitmapToBitmap(WriteableBitmap writeBmp)
+        {
+            Bitmap bmp;
+            using (MemoryStream outStream = new MemoryStream())
+            {
+                BitmapEncoder enc = new BmpBitmapEncoder();
+                enc.Frames.Add(BitmapFrame.Create((BitmapSource)writeBmp));
+                enc.Save(outStream);
+                bmp = new Bitmap(outStream);
+            }
+            return bmp;
+        }
+
     }
 }
